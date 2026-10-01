@@ -1,0 +1,39 @@
+name: MLOps CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "main", "master" ]
+
+jobs:
+  test-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Generate Mock Data
+      run: python generate_data.py
+
+    - name: Train Model & Register to MLflow
+      run: python src/train.py
+
+    - name: Run Unit Tests with Pytest
+      run: pytest tests/test_api.py
+
+    - name: Simulate Cloud Deployment (AWS / Azure / GCP)
+      run: |
+        echo "🚀 All tests passed! Proceeding to deployment..."
+        echo "☁️ Connecting to Azure / Google Cloud / AWS..."
+        echo "📦 Pulling latest Docker image..."
+        echo "✅ Deployment Successful! API is now live on Production."
