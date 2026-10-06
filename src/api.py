@@ -2,12 +2,25 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 import mlflow.sklearn
 import pandas as pd
+import joblib
+import os
 
 app = FastAPI(title="House Price Prediction API")
 
-# โหลดโมเดลเวอร์ชันล่าสุดที่เราลงทะเบียนไว้ใน MLflow
+# 1. กำหนด URI ของโมเดล (ใช้เวอร์ชัน 1 ตามที่คุณตั้งไว้ หรือเปลี่ยนเป็น "models:/house-price-model/latest" ก็ได้)
 MODEL_URI = "models:/house-price-model/1"
-model = mlflow.sklearn.load_model(MODEL_URI)
+
+# 2. ระบบ Fallback: ลองโหลดจาก MLflow ก่อน หากล้มเหลว (เช่น ตอนอยู่บน Render) ให้โหลดจากไฟล์ model.pkl
+try:
+    model = mlflow.sklearn.load_model(MODEL_URI)
+    print("✅ Loaded model from MLflow Registry")
+except Exception as e:
+    print(f"⚠️ MLflow artifact not found. Falling back to local file: {e}")
+    if os.path.exists("model.pkl"):
+        model = joblib.load("model.pkl")
+        print("✅ Loaded model directly from model.pkl")
+    else:
+        raise RuntimeError("❌ Model file not found! Please run train.py first.")
 
 # กำหนดรูปแบบข้อมูล Input ที่ API จะรับเข้ามา
 class HouseFeatures(BaseModel):
