@@ -5,13 +5,10 @@ import pandas as pd
 import joblib
 import os
 
-# ตั้งชื่อและเวอร์ชันให้เหมือนในรูปของเพื่อน
 app = FastAPI(title="House Price Prediction API", version="1.0.0")
 
-# 1. กำหนด URI ของโมเดล
 MODEL_URI = "models:/house-price-model/1"
 
-# 2. ระบบ Fallback สำหรับการโหลดบนคลาวด์
 try:
     model = mlflow.sklearn.load_model(MODEL_URI)
     print("✅ Loaded model from MLflow Registry")
@@ -23,7 +20,6 @@ except Exception as e:
     else:
         raise RuntimeError("❌ Model file not found! Please run train.py first.")
 
-# กำหนดรูปแบบข้อมูล Input
 class HouseFeatures(BaseModel):
     area_sqm: int
     bedrooms: int
