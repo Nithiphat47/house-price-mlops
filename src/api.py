@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.openapi.docs import get_swagger_ui_html # นำเข้าโมดูลสำหรับสร้างหน้า Swagger ใหม่
 from pydantic import BaseModel
 import mlflow.sklearn
 import pandas as pd
@@ -25,16 +26,31 @@ tags_meta = [
     {"name": "System", "description": "ส่วนสำหรับมอนิเตอร์และตรวจสอบสถานะเซิร์ฟเวอร์ ⚙️"}
 ]
 
+# เพิ่ม docs_url=None เพื่อปิดหน้าจอสีขาวแบบเดิม
 app = FastAPI(
     title="🏡 House Price Prediction API",
     description=description_text,
     version="1.0.0",
     openapi_tags=tags_meta,
+    docs_url=None, 
     contact={
         "name": "Nithiphat Sinthong",
         "url": "https://github.com/Nithiphat47/house-price-mlops",
     }
 )
+
+# ----------------------------------------------------
+# 🎨 สร้างหน้า /docs ขึ้นมาใหม่ พร้อมแทรก CSS ธีม Dark Mode
+# ----------------------------------------------------
+@app.get("/docs", include_in_schema=False)
+async def custom_swagger_ui_html():
+    return get_swagger_ui_html(
+        openapi_url=app.openapi_url,
+        title=app.title + " - Swagger UI",
+        oauth2_redirect_url=app.swagger_ui_oauth2_redirect_url,
+        # แทรกไฟล์ CSS สีดำเข้าไป
+        swagger_css_url="https://cdn.jsdelivr.net/gh/Itz-fork/Fastapi-Swagger-UI-Dark/assets/swagger_ui_dark.min.css"
+    )
 
 MODEL_URI = "models:/house-price-model/1"
 
@@ -63,12 +79,10 @@ class HouseFeatures(BaseModel):
 def read_root():
     return {"message": "Welcome to House Price Prediction API! Go to /docs to test it."}
 
-# [เพิ่มใหม่] 1. Health Check
 @app.get("/health", tags=["System"])
 def health_check():
     return {"status": "healthy", "model_loaded": True}
 
-# 2. Predict Price (ของเดิม)
 @app.post("/predict", tags=["Predict"])
 def predict_price(features: HouseFeatures):
     loc_suburban = 1 if features.location == 'Suburban' else 0
@@ -89,10 +103,8 @@ def predict_price(features: HouseFeatures):
         "input_features": features.dict()
     }
 
-# [เพิ่มใหม่] 3. Metrics
 @app.get("/metrics", tags=["System"])
 def get_metrics():
-    # ส่งค่าสถิติจำลองกลับไป (พร้อมต่อยอดกับ Prometheus ในอนาคต)
     return {
         "status": "active",
         "description": "Metrics endpoint is ready."
